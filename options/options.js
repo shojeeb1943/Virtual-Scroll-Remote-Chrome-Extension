@@ -14,13 +14,23 @@
     document.getElementById('scrollStep').value = settings.scrollStep || 500;
     document.getElementById('scrollStepValue').textContent = (settings.scrollStep || 500) + 'px';
 
+    document.getElementById('accelMax').value = settings.accelerationMax || 5;
+    document.getElementById('accelMaxValue').textContent = (settings.accelerationMax || 5) + 'x';
+
     document.getElementById('accelDuration').value = settings.accelerationDuration || 3000;
     document.getElementById('accelDurationValue').textContent = ((settings.accelerationDuration || 3000) / 1000) + ' seconds';
 
-    document.getElementById('opacity').value = 0.8;
-    document.getElementById('opacityValue').textContent = '0.8';
+    document.getElementById('holdThreshold').value = settings.holdThreshold || 300;
+    document.getElementById('holdThresholdValue').textContent = (settings.holdThreshold || 300) + 'ms';
+
+    document.getElementById('doubleClickWindow').value = settings.doubleClickWindow || 400;
+    document.getElementById('doubleClickWindowValue').textContent = (settings.doubleClickWindow || 400) + 'ms';
+
+    document.getElementById('opacity').value = settings.opacity || 0.8;
+    document.getElementById('opacityValue').textContent = settings.opacity || 0.8;
 
     renderExclusionList();
+    setupZoneDrag();
   }
 
   function renderExclusionList() {
@@ -39,12 +49,75 @@
     });
   }
 
+  function sanitizeUrl(url) {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      return urlObj.hostname.replace(/^www\./, '');
+    } catch {
+      return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    }
+  }
+
   function saveSettings() {
     settings.scrollStep = parseInt(document.getElementById('scrollStep').value);
+    settings.accelerationMax = parseFloat(document.getElementById('accelMax').value);
     settings.accelerationDuration = parseInt(document.getElementById('accelDuration').value);
+    settings.holdThreshold = parseInt(document.getElementById('holdThreshold').value);
+    settings.doubleClickWindow = parseInt(document.getElementById('doubleClickWindow').value);
+    settings.opacity = parseFloat(document.getElementById('opacity').value);
 
     chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', settings }, () => {
       console.log('Settings saved');
+    });
+  }
+
+  function setupZoneDrag() {
+    const markers = document.querySelectorAll('.zone-marker');
+    let activeMarker = null;
+
+    markers.forEach(marker => {
+      marker.addEventListener('dragstart', (e) => {
+        activeMarker = marker;
+        marker.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      marker.addEventListener('dragend', () => {
+        marker.classList.remove('dragging');
+        activeMarker = null;
+      });
+    });
+
+    document.getElementById('zonePreview').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    document.getElementById('zonePreview').addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (!activeMarker) return;
+
+      const rect = e.currentTarget.querySelector('.preview-viewport').getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      activeMarker.style.left = x + '%';
+      activeMarker.style.top = y + '%';
+
+      const zone = activeMarker.id === 'topRightMarker' ? 'topRight' : 'bottomRight';
+      if (!settings.triggerZones) settings.triggerZones = {};
+      settings.triggerZones[zone] = { x, y };
+
+      saveSettings();
+    });
+
+    document.getElementById('resetZones').addEventListener('click', () => {
+      document.getElementById('topRightMarker').style.left = '';
+      document.getElementById('topRightMarker').style.top = '';
+      document.getElementById('bottomRightMarker').style.left = '';
+      document.getElementById('bottomRightMarker').style.top = '';
+      settings.triggerZones = { topRight: { x: 0, y: 0 }, bottomRight: { x: 0, y: 0 } };
+      saveSettings();
     });
   }
 
@@ -53,24 +126,42 @@
   });
   document.getElementById('scrollStep').addEventListener('change', saveSettings);
 
+  document.getElementById('accelMax').addEventListener('input', (e) => {
+    document.getElementById('accelMaxValue').textContent = e.target.value + 'x';
+  });
+  document.getElementById('accelMax').addEventListener('change', saveSettings);
+
   document.getElementById('accelDuration').addEventListener('input', (e) => {
     document.getElementById('accelDurationValue').textContent = (e.target.value / 1000) + ' seconds';
   });
   document.getElementById('accelDuration').addEventListener('change', saveSettings);
 
+  document.getElementById('holdThreshold').addEventListener('input', (e) => {
+    document.getElementById('holdThresholdValue').textContent = e.target.value + 'ms';
+  });
+  document.getElementById('holdThreshold').addEventListener('change', saveSettings);
+
+  document.getElementById('doubleClickWindow').addEventListener('input', (e) => {
+    document.getElementById('doubleClickWindowValue').textContent = e.target.value + 'ms';
+  });
+  document.getElementById('doubleClickWindow').addEventListener('change', saveSettings);
+
   document.getElementById('opacity').addEventListener('input', (e) => {
     document.getElementById('opacityValue').textContent = e.target.value;
   });
+  document.getElementById('opacity').addEventListener('change', saveSettings);
 
   document.getElementById('addDomain').addEventListener('click', () => {
     const input = document.getElementById('newDomain');
-    const domain = input.value.trim();
+    const domain = sanitizeUrl(input.value.trim());
     if (domain) {
       if (!settings.excludedDomains) settings.excludedDomains = [];
-      settings.excludedDomains.push(domain);
-      input.value = '';
-      renderExclusionList();
-      saveSettings();
+      if (!settings.excludedDomains.includes(domain)) {
+        settings.excludedDomains.push(domain);
+        input.value = '';
+        renderExclusionList();
+        saveSettings();
+      }
     }
   });
 

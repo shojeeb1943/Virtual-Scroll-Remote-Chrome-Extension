@@ -123,6 +123,68 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .zone-preview {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    .preview-viewport {
+      position: relative;
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .zone-marker {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.8);
+      border: 2px solid #fff;
+      cursor: grab;
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .zone-marker:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .zone-marker.dragging {
+      cursor: grabbing;
+      opacity: 0.8;
+    }
+    .zone-marker.top-right {
+      top: 10px;
+      right: 10px;
+    }
+    .zone-marker.bottom-right {
+      bottom: 10px;
+      right: 10px;
+    }
+    .zone-marker::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='18,15 12,9 6,15'%3E%3C/polyline%3E%3Cpolyline points='6,9 12,15 18,9' style='margin-top:6px'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+    }
+    .zone-controls {
+      display: flex;
+      gap: 12px;
+    }
+    .zone-reset {
+      background: #6b7280;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
     @media (prefers-color-scheme: dark) {
       body {
         background: #1a1a1a;
@@ -149,6 +211,10 @@
         border-color: #404040;
         color: #e5e5e5;
       }
+      .preview-viewport {
+        background: linear-gradient(135deg, #333 0%, #262626 100%);
+        border-color: #404040;
+      }
     }
   </style>
 </head>
@@ -157,29 +223,60 @@
     <div class="sidebar">
       <h1>Virtual Scroll Remote</h1>
       <div class="nav-item active" data-section="general">General</div>
-      <div class="nav-item" data-section="appearance">Appearance</div>
+      <div class="nav-item" data-section="scroll">Scroll</div>
+      <div class="nav-item" data-section="zones">Trigger Zones</div>
       <div class="nav-item" data-section="exclusions">Exclusion List</div>
     </div>
     <div class="main">
       <div class="section active" id="general">
         <h2>General Settings</h2>
         <div class="card">
+          <label>Button Opacity</label>
+          <input type="range" id="opacity" min="0.3" max="1" step="0.1" value="0.8">
+          <span class="value" id="opacityValue">0.8</span>
+        </div>
+        <div class="card">
+          <label>Hold Threshold (ms before continuous scroll starts)</label>
+          <input type="range" id="holdThreshold" min="200" max="600" step="50" value="300">
+          <span class="value" id="holdThresholdValue">300ms</span>
+        </div>
+      </div>
+      <div class="section" id="scroll">
+        <h2>Scroll Settings</h2>
+        <div class="card">
           <label>Scroll Step (pixels per click)</label>
           <input type="range" id="scrollStep" min="100" max="2000" value="500">
           <span class="value" id="scrollStepValue">500px</span>
         </div>
         <div class="card">
-          <label>Acceleration Duration (hold to speed up)</label>
-          <input type="range" id="accelDuration" min="1000" max="6000" value="3000">
+          <label>Max Acceleration (speed multiplier at peak)</label>
+          <input type="range" id="accelMax" min="2" max="10" step="0.5" value="5">
+          <span class="value" id="accelMaxValue">5x</span>
+        </div>
+        <div class="card">
+          <label>Acceleration Duration (time to reach max speed)</label>
+          <input type="range" id="accelDuration" min="1000" max="6000" step="500" value="3000">
           <span class="value" id="accelDurationValue">3 seconds</span>
         </div>
-      </div>
-      <div class="section" id="appearance">
-        <h2>Appearance</h2>
         <div class="card">
-          <label>Button Opacity</label>
-          <input type="range" id="opacity" min="0.3" max="1" step="0.1" value="0.8">
-          <span class="value" id="opacityValue">0.8</span>
+          <label>Double Click Window (max time between clicks)</label>
+          <input type="range" id="doubleClickWindow" min="200" max="800" step="50" value="400">
+          <span class="value" id="doubleClickWindowValue">400ms</span>
+        </div>
+      </div>
+      <div class="section" id="zones">
+        <h2>Trigger Zones</h2>
+        <p style="color: #666; margin-bottom: 16px;">Drag the buttons to reposition trigger zones.</p>
+        <div class="card">
+          <div class="zone-preview" id="zonePreview">
+            <div class="preview-viewport">
+              <div class="zone-marker top-right" id="topRightMarker" draggable="true"></div>
+              <div class="zone-marker bottom-right" id="bottomRightMarker" draggable="true"></div>
+            </div>
+          </div>
+          <div class="zone-controls">
+            <button class="zone-reset" id="resetZones">Reset to Default</button>
+          </div>
         </div>
       </div>
       <div class="section" id="exclusions">

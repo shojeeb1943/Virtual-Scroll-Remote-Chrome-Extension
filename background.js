@@ -3,9 +3,12 @@ const DEFAULT_SETTINGS = {
   accelerationBase: 1,
   accelerationMax: 5,
   accelerationDuration: 3000,
+  holdThreshold: 300,
+  doubleClickWindow: 400,
+  opacity: 0.8,
   triggerZones: {
-    topRight: { x: 50, y: 100 },
-    bottomRight: { x: 50, y: -100 }
+    topRight: { x: 0, y: 0 },
+    bottomRight: { x: 0, y: 0 }
   },
   excludedDomains: []
 };

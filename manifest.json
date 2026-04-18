@@ -20,7 +20,8 @@
     }
   ],
   "action": {
-    "default_title": "Virtual Scroll Remote"
+    "default_title": "Virtual Scroll Remote",
+    "default_popup": "popup/popup.html"
   },
   "options_page": "options/options.html",
   "icons": {
