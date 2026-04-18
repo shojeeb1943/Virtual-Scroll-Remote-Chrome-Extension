@@ -198,47 +198,34 @@
     async loadSettings() {
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          resolve({
-            scrollStep: 500,
-            accelerationBase: 1,
-            accelerationMax: 5,
-            accelerationDuration: 3000,
-            holdThreshold: 300,
-            doubleClickWindow: 400,
-            opacity: 0.8,
-            excludedDomains: []
-          });
+          resolve(this.validateSettings({}));
         }, 2000);
 
         chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
           clearTimeout(timeout);
           if (chrome.runtime.lastError) {
             console.warn('Failed to get settings:', chrome.runtime.lastError.message);
-            resolve({
-              scrollStep: 500,
-              accelerationBase: 1,
-              accelerationMax: 5,
-              accelerationDuration: 3000,
-              holdThreshold: 300,
-              doubleClickWindow: 400,
-              opacity: 0.8,
-              excludedDomains: []
-            });
+            resolve(this.validateSettings({}));
           } else {
-            this.settings = settings || {
-              scrollStep: 500,
-              accelerationBase: 1,
-              accelerationMax: 5,
-              accelerationDuration: 3000,
-              holdThreshold: 300,
-              doubleClickWindow: 400,
-              opacity: 0.8,
-              excludedDomains: []
-            };
+            this.settings = this.validateSettings(settings || {});
             resolve();
           }
         });
       });
+    }
+
+    validateSettings(settings) {
+      return {
+        scrollStep: Math.max(1, Math.min(settings.scrollStep || 500, 5000)),
+        accelerationBase: Math.max(1, Math.min(settings.accelerationBase || 1, 10)),
+        accelerationMax: Math.max(1, Math.min(settings.accelerationMax || 5, 20)),
+        accelerationDuration: Math.max(500, Math.min(settings.accelerationDuration || 3000, 10000)),
+        holdThreshold: Math.max(100, Math.min(settings.holdThreshold || 300, 1000)),
+        doubleClickWindow: Math.max(100, Math.min(settings.doubleClickWindow || 400, 1000)),
+        opacity: Math.max(0.3, Math.min(settings.opacity || 0.8, 1)),
+        triggerZones: settings.triggerZones || { topRight: { x: 0, y: 0 }, bottomRight: { x: 0, y: 0 } },
+        excludedDomains: Array.isArray(settings.excludedDomains) ? settings.excludedDomains : []
+      };
     }
 
     async isExcluded() {
