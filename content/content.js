@@ -282,11 +282,11 @@
           width: 48px;
           height: 48px;
           border-radius: 12px;
-          background: rgba(255, 255, 255, 0.75);
+          background: rgba(30, 30, 30, 0.85);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -305,8 +305,9 @@
           opacity: 0.8;
         }
         .scroll-button.active {
-          background: rgba(59, 130, 246, 0.4);
-          border-color: rgba(59, 130, 246, 0.6);
+          background: rgba(59, 130, 246, 0.9);
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.3);
         }
         .scroll-button.pulse {
           animation: pulse 1s ease-in-out infinite;
@@ -336,28 +337,14 @@
         .scroll-button svg {
           width: 24px;
           height: 24px;
-          stroke: #3B82F6;
-          stroke-width: 2;
+          stroke: #ffffff;
+          stroke-width: 2.5;
           fill: none;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
         }
         .scroll-button.active svg {
-          stroke: #1d4ed8;
-        }
-        @media (prefers-color-scheme: dark) {
-          .scroll-button {
-            background: rgba(30, 30, 30, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-          }
-          .scroll-button svg {
-            stroke: #60A5FA;
-          }
-          .scroll-button.active {
-            background: rgba(59, 130, 246, 0.3);
-            border-color: rgba(96, 165, 250, 0.5);
-          }
-          .scroll-button.active svg {
-            stroke: #93c5fd;
-          }
+          stroke: #ffffff;
+          filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));
         }
       `;
       this.shadowRoot.appendChild(style);
