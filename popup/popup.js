@@ -1,7 +1,6 @@
 (function() {
   'use strict';
 
-  let isEnabled = true;
   let currentDomain = '';
 
   function init() {
@@ -28,40 +27,53 @@
   }
 
   function updateStatus(isExcluded) {
-    const statusEl = document.getElementById('pageStatus');
-    if (isExcluded) {
-      statusEl.textContent = `Disabled on ${currentDomain}`;
-      statusEl.className = 'current-page excluded';
-      isEnabled = false;
-      document.getElementById('toggle').classList.remove('active');
-    } else {
-      statusEl.textContent = `Active on ${currentDomain}`;
-      statusEl.className = 'current-page active';
-      isEnabled = true;
-      document.getElementById('toggle').classList.add('active');
-    }
+    chrome.storage.local.get(['isEnabled'], (result) => {
+      const isEnabled = result.isEnabled !== false;
+      const statusEl = document.getElementById('pageStatus');
+      const toggle = document.getElementById('toggle');
+
+      if (isExcluded) {
+        statusEl.textContent = `Disabled on ${currentDomain}`;
+        statusEl.className = 'current-page excluded';
+        toggle.classList.remove('active');
+      } else if (!isEnabled) {
+        statusEl.textContent = `Paused on ${currentDomain}`;
+        statusEl.className = 'current-page excluded';
+        toggle.classList.remove('active');
+      } else {
+        statusEl.textContent = `Active on ${currentDomain}`;
+        statusEl.className = 'current-page active';
+        toggle.classList.add('active');
+      }
+    });
   }
 
   function toggleExtension() {
-    isEnabled = !isEnabled;
-    const toggle = document.getElementById('toggle');
-    const statusEl = document.getElementById('pageStatus');
+    chrome.storage.local.get(['isEnabled'], (result) => {
+      const isEnabled = result.isEnabled !== false;
+      const newState = !isEnabled;
 
-    if (isEnabled) {
-      toggle.classList.add('active');
-      statusEl.textContent = `Active on ${currentDomain}`;
-      statusEl.className = 'current-page active';
-    } else {
-      toggle.classList.remove('active');
-      statusEl.textContent = `Disabled on ${currentDomain}`;
-      statusEl.className = 'current-page excluded';
-    }
+      chrome.storage.local.set({ isEnabled: newState }, () => {
+        const toggle = document.getElementById('toggle');
+        const statusEl = document.getElementById('pageStatus');
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.reload(tabs[0].id);
-        window.close();
-      }
+        if (newState) {
+          toggle.classList.add('active');
+          statusEl.textContent = `Active on ${currentDomain}`;
+          statusEl.className = 'current-page active';
+        } else {
+          toggle.classList.remove('active');
+          statusEl.textContent = `Paused on ${currentDomain}`;
+          statusEl.className = 'current-page excluded';
+        }
+
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.reload(tabs[0].id);
+            window.close();
+          }
+        });
+      });
     });
   }
 
