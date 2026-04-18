@@ -511,7 +511,7 @@
       if (timeSinceMousedown < this.settings.holdThreshold) {
         if (timeSinceLastClick < this.settings.doubleClickWindow && this.clickState.direction === direction) {
           this.executeDoubleClick(direction);
-          this.clickState.lastClickTime = 0;
+          this.clickState.lastClickTime = now;
         } else {
           this.debounceTimer = setTimeout(() => {
             this.executeSingleClick(direction);
