@@ -637,9 +637,20 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new VirtualScrollRemote());
-  } else {
-    new VirtualScrollRemote();
+  function initializeExtension() {
+    if (!document.body) {
+      requestAnimationFrame(initializeExtension);
+      return;
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => new VirtualScrollRemote());
+    } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      new VirtualScrollRemote();
+    } else {
+      requestAnimationFrame(() => new VirtualScrollRemote());
+    }
   }
+
+  initializeExtension();
 })();
