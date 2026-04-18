@@ -1,6 +1,10 @@
 (function() {
   'use strict';
 
+  const CLICK_HOLD_THRESHOLD = 300;
+  const DOUBLE_CLICK_THRESHOLD = 400;
+  const DEBOUNCE_DELAY = 100;
+
   class VirtualScrollRemote {
     constructor() {
       this.settings = null;
@@ -8,8 +12,16 @@
       this.container = null;
       this.upButton = null;
       this.downButton = null;
-      this.isScrolling = false;
       this.scrollInterval = null;
+      this.clickState = {
+        direction: null,
+        mousedownTime: 0,
+        lastClickTime: 0,
+        holdTimeout: null,
+        isHolding: false,
+        isScrolling: false
+      };
+      this.debounceTimer = null;
       this.init();
     }
 
@@ -91,7 +103,7 @@
           justify-content: center;
           cursor: pointer;
           opacity: 0;
-          transition: opacity 200ms ease-in, transform 150ms ease;
+          transition: opacity 200ms ease-in, transform 150ms ease, box-shadow 150ms ease;
           z-index: 2147483647;
         }
         .scroll-button:hover {
@@ -103,12 +115,16 @@
         .scroll-button.visible {
           opacity: 0.8;
         }
+        .scroll-button.active {
+          background: rgba(59, 130, 246, 0.4);
+          border-color: rgba(59, 130, 246, 0.6);
+        }
         .scroll-button.pulse {
           animation: pulse 1s ease-in-out infinite;
         }
         @keyframes pulse {
           0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
-          50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5); }
+          50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 4px 20px rgba(59, 130, 246, 0.4); }
         }
         .scroll-button.up {
           top: 20px;
@@ -125,6 +141,9 @@
           stroke-width: 2;
           fill: none;
         }
+        .scroll-button.active svg {
+          stroke: #1d4ed8;
+        }
         @media (prefers-color-scheme: dark) {
           .scroll-button {
             background: rgba(30, 30, 30, 0.75);
@@ -132,6 +151,13 @@
           }
           .scroll-button svg {
             stroke: #60A5FA;
+          }
+          .scroll-button.active {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: rgba(96, 165, 250, 0.5);
+          }
+          .scroll-button.active svg {
+            stroke: #93c5fd;
           }
         }
       `;
@@ -172,16 +198,13 @@
       this.bottomZone.addEventListener('mouseenter', () => this.showButton(this.downButton));
       this.bottomZone.addEventListener('mouseleave', () => this.hideButton(this.downButton));
 
-      this.upButton.addEventListener('click', (e) => this.handleScroll(e, 'up'));
-      this.downButton.addEventListener('click', (e) => this.handleScroll(e, 'down'));
+      this.upButton.addEventListener('mousedown', (e) => this.handleMouseDown(e, 'up'));
+      this.upButton.addEventListener('mouseup', () => this.handleMouseUp('up'));
+      this.upButton.addEventListener('mouseleave', () => this.handleMouseUp('up'));
 
-      this.upButton.addEventListener('mousedown', () => this.startHoldScroll('up'));
-      this.upButton.addEventListener('mouseup', () => this.stopHoldScroll());
-      this.upButton.addEventListener('mouseleave', () => this.stopHoldScroll());
-
-      this.downButton.addEventListener('mousedown', () => this.startHoldScroll('down'));
-      this.downButton.addEventListener('mouseup', () => this.stopHoldScroll());
-      this.downButton.addEventListener('mouseleave', () => this.stopHoldScroll());
+      this.downButton.addEventListener('mousedown', (e) => this.handleMouseDown(e, 'down'));
+      this.downButton.addEventListener('mouseup', () => this.handleMouseUp('down'));
+      this.downButton.addEventListener('mouseleave', () => this.handleMouseUp('down'));
     }
 
     showButton(button) {
@@ -191,21 +214,76 @@
     hideButton(button) {
       button.classList.remove('visible');
       button.classList.remove('pulse');
+      button.classList.remove('active');
     }
 
-    handleScroll(event, direction) {
+    handleMouseDown(event, direction) {
       event.preventDefault();
+      
+      if (this.debounceTimer) return;
+
+      const now = Date.now();
+      const button = direction === 'up' ? this.upButton : this.downButton;
+
+      this.clickState.direction = direction;
+      this.clickState.mousedownTime = now;
+      this.clickState.isHolding = true;
+
+      this.clickState.holdTimeout = setTimeout(() => {
+        if (this.clickState.isHolding && this.clickState.direction === direction) {
+          this.startContinuousScroll(direction, button);
+        }
+      }, CLICK_HOLD_THRESHOLD);
+    }
+
+    handleMouseUp(direction) {
+      if (this.debounceTimer) return;
+
+      clearTimeout(this.clickState.holdTimeout);
+      
+      if (!this.clickState.isHolding) return;
+      
+      const now = Date.now();
+      const timeSinceMousedown = now - this.clickState.mousedownTime;
+      const timeSinceLastClick = now - this.clickState.lastClickTime;
+
+      this.clickState.isHolding = false;
+
+      if (this.clickState.isScrolling) {
+        this.stopContinuousScroll();
+        return;
+      }
+
+      if (timeSinceMousedown < CLICK_HOLD_THRESHOLD) {
+        if (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD && this.clickState.direction === direction) {
+          this.executeDoubleClick(direction);
+          this.clickState.lastClickTime = 0;
+        } else {
+          this.debounceTimer = setTimeout(() => {
+            this.executeSingleClick(direction);
+            this.clickState.lastClickTime = now;
+            this.debounceTimer = null;
+          }, DEBOUNCE_DELAY);
+        }
+      }
+    }
+
+    executeSingleClick(direction) {
       this.scrollByDirection(direction, this.settings.scrollStep);
     }
 
-    scrollByDirection(direction, amount) {
-      const scrollAmount = direction === 'up' ? -amount : amount;
-      window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    executeDoubleClick(direction) {
+      if (direction === 'up') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      }
     }
 
-    startHoldScroll(direction) {
-      const button = direction === 'up' ? this.upButton : this.downButton;
+    startContinuousScroll(direction, button) {
+      this.clickState.isScrolling = true;
       button.classList.add('pulse');
+      button.classList.add('active');
 
       let startTime = Date.now();
       let currentSpeed = this.settings.accelerationBase;
@@ -220,13 +298,20 @@
       }, 50);
     }
 
-    stopHoldScroll() {
+    stopContinuousScroll() {
       if (this.scrollInterval) {
         clearInterval(this.scrollInterval);
         this.scrollInterval = null;
       }
-      this.upButton?.classList.remove('pulse');
-      this.downButton?.classList.remove('pulse');
+      this.clickState.isScrolling = false;
+      this.clickState.direction = null;
+      this.upButton?.classList.remove('pulse', 'active');
+      this.downButton?.classList.remove('pulse', 'active');
+    }
+
+    scrollByDirection(direction, amount) {
+      const scrollAmount = direction === 'up' ? -amount : amount;
+      window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
     }
   }
 
