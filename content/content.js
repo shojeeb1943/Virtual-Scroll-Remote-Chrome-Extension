@@ -31,13 +31,30 @@
       await this.loadSettings();
       if (!(await this.isEnabled())) return;
       if (await this.isExcluded()) return;
+      
       this.createShadowDOM();
       this.createTriggerZones();
       this.createButtons();
       this.createHorizontalButtons();
+      
+      if (!this.validateInitialization()) {
+        console.error('Failed to initialize buttons properly');
+        return;
+      }
+      
       this.attachEventListeners();
       this.initOnboarding();
       this.setupCleanup();
+    }
+
+    validateInitialization() {
+      const buttons = [this.upButton, this.downButton, this.leftButton, this.rightButton];
+      const zones = [this.topZone, this.bottomZone, this.leftZone, this.rightZone];
+      
+      const allButtonsValid = buttons.every(btn => btn && btn instanceof Element);
+      const allZonesValid = zones.every(zone => zone && zone instanceof Element);
+      
+      return allButtonsValid && allZonesValid && this.shadowRoot && this.container;
     }
 
     async isEnabled() {
