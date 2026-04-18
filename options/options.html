@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Scroll Remote - Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      background: #fff;
+      padding: 24px 16px;
+      border-right: 1px solid #e5e5e5;
+    }
+    .sidebar h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      color: #3B82F6;
+    }
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: background 150ms ease;
+    }
+    .nav-item:hover {
+      background: #f5f5f5;
+    }
+    .nav-item.active {
+      background: #EBF5FF;
+      color: #3B82F6;
+      font-weight: 500;
+    }
+    .main {
+      flex: 1;
+      padding: 32px;
+    }
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    .section h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .card input[type="range"] {
+      width: 100%;
+      margin: 8px 0;
+    }
+    .card .value {
+      font-size: 14px;
+      color: #666;
+    }
+    .exclusion-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .exclusion-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .exclusion-item button {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-domain {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .add-domain input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+    }
+    .add-domain button {
+      background: #3B82F6;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1a1a1a;
+        color: #e5e5e5;
+      }
+      .sidebar {
+        background: #262626;
+        border-color: #404040;
+      }
+      .card {
+        background: #262626;
+      }
+      .nav-item:hover {
+        background: #333;
+      }
+      .nav-item.active {
+        background: #1e3a5f;
+      }
+      .exclusion-item {
+        background: #333;
+      }
+      .card input[type="text"] {
+        background: #333;
+        border-color: #404040;
+        color: #e5e5e5;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h1>Virtual Scroll Remote</h1>
+      <div class="nav-item active" data-section="general">General</div>
+      <div class="nav-item" data-section="appearance">Appearance</div>
+      <div class="nav-item" data-section="exclusions">Exclusion List</div>
+    </div>
+    <div class="main">
+      <div class="section active" id="general">
+        <h2>General Settings</h2>
+        <div class="card">
+          <label>Scroll Step (pixels per click)</label>
+          <input type="range" id="scrollStep" min="100" max="2000" value="500">
+          <span class="value" id="scrollStepValue">500px</span>
+        </div>
+        <div class="card">
+          <label>Acceleration Duration (hold to speed up)</label>
+          <input type="range" id="accelDuration" min="1000" max="6000" value="3000">
+          <span class="value" id="accelDurationValue">3 seconds</span>
+        </div>
+      </div>
+      <div class="section" id="appearance">
+        <h2>Appearance</h2>
+        <div class="card">
+          <label>Button Opacity</label>
+          <input type="range" id="opacity" min="0.3" max="1" step="0.1" value="0.8">
+          <span class="value" id="opacityValue">0.8</span>
+        </div>
+      </div>
+      <div class="section" id="exclusions">
+        <h2>Exclusion List</h2>
+        <p style="color: #666; margin-bottom: 16px;">Sites where the extension will be disabled.</p>
+        <div class="card">
+          <div class="exclusion-list" id="exclusionList"></div>
+          <div class="add-domain">
+            <input type="text" id="newDomain" placeholder="example.com">
+            <button id="addDomain">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
