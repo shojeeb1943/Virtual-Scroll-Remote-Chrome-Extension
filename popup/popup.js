@@ -21,7 +21,13 @@
 
   function checkExclusion() {
     chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
-      const isExcluded = (settings.excludedDomains || []).some(domain => currentDomain.includes(domain));
+      const excludedDomains = settings.excludedDomains || [];
+      const isExcluded = excludedDomains.some(domain => {
+        const normalizedDomain = domain.toLowerCase().trim();
+        const normalizedCurrent = currentDomain.toLowerCase();
+        return normalizedCurrent === normalizedDomain || 
+               normalizedCurrent.endsWith('.' + normalizedDomain);
+      });
       updateStatus(isExcluded);
     });
   }

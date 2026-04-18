@@ -57,7 +57,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const url = message.url;
     chrome.storage.local.get(['settings', 'isEnabled'], (result) => {
       const settings = result.settings || DEFAULT_SETTINGS;
-      const isExcluded = settings.excludedDomains.some(domain => url.includes(domain));
+      
+      let currentHostname = '';
+      try {
+        currentHostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+      } catch (e) {
+        currentHostname = '';
+      }
+      
+      const isExcluded = (settings.excludedDomains || []).some(domain => {
+        const normalizedDomain = domain.toLowerCase().trim();
+        return currentHostname === normalizedDomain || 
+               currentHostname.endsWith('.' + normalizedDomain);
+      });
+      
       const isEnabled = result.isEnabled !== false;
       
       if (sender.tab?.id) {
